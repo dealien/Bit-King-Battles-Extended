@@ -1,0 +1,273 @@
+# Overlay
+
+  The overlay receives data about the combat, current and new king over websocket that is
+  connected to the AnkhBot WebSocket Server that handles events. The Python script will
+  use this to push any relevant data to the connected overlays.
+
+  The overlay as mentioned before is in your full control on how you design it or 
+  distribute your creation for others to use (that would be awesome).
+
+  The following websocket events are used to push data to the overlay;
+
+    - EVENT_BKB_REFRESH
+    - EVENT_BKB_HEAL
+    - EVENT_BKB_DAMAGE
+    - EVENT_BKB_KILL
+
+  Data attached with these events will consist of the basic structure of;
+
+    {
+      "BKBDATA": {
+
+      },
+      "CurrentKing": {
+
+      },
+      "NewKing": {
+
+      }
+    }
+
+  - CurrentKing
+
+    Always hold the value of the current king and before any action has performed
+
+  - NewKing
+
+    Hold new king data that is calculated after any action;
+      - Healing; Current King but new health values due to the healing
+      - Damage; Current King but new health/shield values due to the damage taken
+      - Kill; The new king that killed the 'current' king with its starting shield/health values
+
+  - BKBData
+
+    Contains various combat data information that is potentially usefull for the overlay
+    On REFRESH event this contains color and volume settings for the overlay.
+
+# WebSocket Data Breakdown
+
+  NewKing and CurrentKing:
+
+    "UserName": string - Containing the username name of the king
+    "DisplayName": string - Containing the display name of the king
+    "AvatarUri": string - Twitch avatar of the king **NOT IMPLEMENTED YET, ALWAYS EMPTY**
+    "Health": integer - Current health value
+    "MaxHealth": integer - Maximum health value
+    "HealthPercentage": float - Percentage of health (current/maximum) rounded to two decimals
+    "Shield": integer - Current shield value
+    "MaxShield": integer - Maximum shield value
+    "ShieldPercentage": float - Percentage of shield (current/maximum) rounded to two decimals
+
+  REFRESH BKBData:
+
+		"ColHealth": string - containing rgba color data for health bar
+		"ColShield": string - containing rgba color data for shield bar
+		"ColDamage": string - containing rgba color data for damage bar
+		"ColHealing": string - containing rgba color data for healing bar
+		"ColPrimary": string - containing rgba color data for a primary color
+		"ColSecondary": string - containing rgba color data for a secondary color
+		"VolHealthNorm": float - volume as float (0.0 - 1.0) for health hit normal sound
+		"VolHealthCrit": float - volume as float (0.0 - 1.0) for health hit critical sound
+		"VolShieldNorm": float - volume as float (0.0 - 1.0) for shield hit normal sound
+		"VolShieldCrit": float - volume as float (0.0 - 1.0) for shield hit critical sound
+		"VolHealNorm": float - volume as float (0.0 - 1.0) for heal normal sound
+		"VolHealCrit": float - volume as float (0.0 - 1.0) for heal crticial sound
+		"VolDeath": float - volume as float (0.0 - 1.0) for death sound
+
+  DAMAGE/HEAL/KILL BKBData:
+
+    "UserName": string - Containing the username of the combatiant (bits user)
+    "DisplayName": string - Containing the display name of the combatiant (bits user)
+    "IsDamage": boolean - True when it is a damage action, False for healing
+    "HealthDamage": integer - Total damage to health
+    "IsHealthCrit": boolean - True if it is a critical health hit
+    "ShieldDamage": integer - Total damage to shield
+    "IsShieldCrit": boolean - True if it is a critical shield hit
+    "HealingAmount": integer - Total healing amount
+    "IsHealCrit": boolean - True if it is a critical heal
+    "HasShield": boolean - True if the current king has/had a shield
+    "IsShieldBreak": boolean - True if the shield of the current king broke
+    "IsKill": boolean - True if the current king is killed
+    "IsFullyHealed": boolean - True if the current king full healed
+    "ClippedAmount": integer - Total amount clipped to [MaxHealth + Shield] for damage or [MaxHealth - Health] for healing
+    "TotalAmount": integer - Total and actual bits amount used
+
+# EVENT_BKB_REFRESH
+# On Refresh Event
+
+  Send out by AnkhBot when it starts up, reloads scripts or new settings have changed.
+  The data send out over websocket only contains the current king details.
+
+{
+  "BKBData": {
+		"ColHealth": "string",
+		"ColShield": "string",
+		"ColDamage": "string",
+		"ColHealing": "string",
+		"ColPrimary": "string",
+		"ColSecondary": "string",
+		"VolHealthNorm": float,
+		"VolHealthCrit": float,
+		"VolShieldNorm": float,
+		"VolShieldCrit": float,
+		"VolHealNorm": float,
+		"VolHealCrit": float,
+		"VolDeath": float
+  },
+  "CurrentKing": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "AvatarUri": "string",
+    "Health": integer,
+    "MaxHealth": integer,
+    "HealthPercentage": float,
+    "Shield": integer,
+    "MaxShield": integer,
+    "ShieldPercentage": float
+  },
+  "NewKing": null
+}
+
+# EVENT_BKB_HEAL
+# On Heal Event
+
+  Send out by AnkhBot when the current king uses bits thus 'healing' himself.
+  The data send out over websocket contains current king, combat data, and healed up current 'new' king details.
+
+{
+  "BKBData": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "IsDamage": boolean,
+    "HealthDamage": integer,
+    "IsHealthCrit": boolean,
+    "ShieldDamage": integer,
+    "IsShieldCrit": boolean,
+    "HealingAmount": integer,
+    "IsHealCrit": boolean,
+    "HasShield": boolean,
+    "IsShieldBreak": boolean,
+    "IsKill": boolean,
+    "IsFullyHealed": boolean,
+    "ClippedAmount": integer,
+    "TotalAmount": integer
+  },
+  "CurrentKing": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "AvatarUri": "string",
+    "Health": integer,
+    "MaxHealth": integer,
+    "HealthPercentage": float,
+    "Shield": integer,
+    "MaxShield": integer,
+    "ShieldPercentage": float
+  },
+  "NewKing": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "AvatarUri": "string",
+    "Health": integer,
+    "MaxHealth": integer,
+    "HealthPercentage": float,
+    "Shield": integer,
+    "MaxShield": integer,
+    "ShieldPercentage": float
+  }
+}
+
+# EVENT_BKB_DAMAGE
+# On Damage Event
+
+  Send out by AnkhBot when the current king is damaged by another bits user.
+  The data send out over websocket contains current king, combat data, and healed up current 'new' king details
+
+{
+  "BKBData": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "IsDamage": boolean,
+    "HealthDamage": integer,
+    "IsHealthCrit": boolean,
+    "ShieldDamage": integer,
+    "IsShieldCrit": boolean,
+    "HealingAmount": integer,
+    "IsHealCrit": boolean,
+    "HasShield": boolean,
+    "IsShieldBreak": boolean,
+    "IsKill": boolean,
+    "IsFullyHealed": boolean,
+    "ClippedAmount": integer,
+    "TotalAmount": integer
+  },
+  "CurrentKing": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "AvatarUri": "string",
+    "Health": integer,
+    "MaxHealth": integer,
+    "HealthPercentage": float,
+    "Shield": integer,
+    "MaxShield": integer,
+    "ShieldPercentage": float
+  },
+  "NewKing": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "AvatarUri": "string",
+    "Health": integer,
+    "MaxHealth": integer,
+    "HealthPercentage": float,
+    "Shield": integer,
+    "MaxShield": integer,
+    "ShieldPercentage": float
+  }
+}
+
+# EVENT_BKB_KILL
+# On Kill Event
+
+  Send out by AnkhBot when the current king is killed by another bits users that thus will become the new king.
+  The data send out over websocket contains current king, combat data, and the new king details.
+
+{
+  "BKBData": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "IsDamage": boolean,
+    "HealthDamage": integer,
+    "IsHealthCrit": boolean,
+    "ShieldDamage": integer,
+    "IsShieldCrit": boolean,
+    "HealingAmount": integer,
+    "IsHealCrit": boolean,
+    "HasShield": boolean,
+    "IsShieldBreak": boolean,
+    "IsKill": boolean,
+    "IsFullyHealed": boolean,
+    "ClippedAmount": integer,
+    "TotalAmount": integer
+  },
+  "CurrentKing": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "AvatarUri": "string",
+    "Health": integer,
+    "MaxHealth": integer,
+    "HealthPercentage": float,
+    "Shield": integer,
+    "MaxShield": integer,
+    "ShieldPercentage": float
+  },
+  "NewKing": {
+    "UserName": "string",
+    "DisplayName": "string",
+    "AvatarUri": "string",
+    "Health": integer,
+    "MaxHealth": integer,
+    "HealthPercentage": float,
+    "Shield": integer,
+    "MaxShield": integer,
+    "ShieldPercentage": float
+  }
+}

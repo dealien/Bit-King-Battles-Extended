@@ -1,0 +1,15 @@
+If you are advanced or know someone that can, you can create your
+own Bit King Battles overlay using the data send to the websocket.
+
+Read websocket.txt to see what kind of data to expect and you can
+always use overlay_default as an example and starting point!
+
+If you want to adjust the default shipped overlays make sure you
+make copy of the folder and give it another name so when updating
+Bit King Battles it will not override any changes you made!
+
+#  overlay_YOUR_NAMED_OVERLAY_vx.x
+
+This also allows for easy redistribution so other people that use
+your created overlay only have to drop into the Bit King Battles
+folder and can start using the new overlay straight away!

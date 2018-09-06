@@ -1,0 +1,68 @@
+# About
+-------
+
+Bit King Battles Extended is a modified version of Bit King Battles created by VyrenGames (http://www.twitch.tv/vyrengames).
+Original Bit King Battles created by Ocgineer (http://www.twitch.tv/ocgineer).
+
+Bit King Battles is a "Bit Boss Battle" and "Stream Minions" clone made for AnkhBot
+Python scripts. The main concept around these type of minigames comes down that a
+current king has to be defeated by other players using cheers aka bits. When the
+current king is defeated the person that dealth the killing blow will become the
+new king to be defeated by others. Depending on the selected mode AND the amount of
+bits used to defeat the king, the health, maximum health and shield values will
+differ. Main advantages over online services;
+
+  - 13 different customizable Twitch Chat Message outputs on different possible events
+  - Python Script can be adjusted to your own needs and specifications
+  - Overlay can be adjusted or rewritten from scratch to your own needs and specifications
+  - Different overlay styles can be easely used in conjunction with each other, having the same data
+
+# Bit King Battles Modes
+------------------------
+
+This python script contains different modes you can select to determain
+the new kings vitals.
+
+  - Shield Mode
+
+    Exceeding damage will be used as shield value, that has to be broken first and
+	  cannot be healed. Health and maximum health are taken as set, which allows for
+	  the new king to heal himself right after becomming the new king.
+
+  - Overkill Mode
+
+		Exceeding damage will be added on top to the set base maximum health and is fully
+		healed, ignoring the set base health. Initial shield can be given to new kings.
+
+	- Strength Mode;
+		The total amount of damage will become the new kings maximum health and is fully
+		healed. The set maximum health will be used as minimum health value a new king
+		gets.
+
+	- Fixed Mode;
+		The new king will have fixed set values for health, maximum health, and shield.
+
+# Testing BKB
+-------------
+
+There is a build in command that only the caster (channel owner) can use to test out
+this Bit King Battle script and test overlay interactions;
+
+  !bkbtest <value>
+
+This will mimic the caster using bits and do either damage if current king is someone else,
+or healing if the current king is the caster. Keep in mind due to limitations of this method
+the damage or healing is saved, thus remember to set back the actual current king after testing!
+
+# Creating Your Own Overlay
+----------------------
+
+It is entirely possible and free to create your own overlay or even adjust the current shipped
+overlays to your own needs and style, if you or someone else has knowledge about HTML, CSS and
+Javascript. More info can be found in overlay.txt and websocket.txt
+
+
+# Limitations
+-------------
+
+Avatar Uri is not implemented already but the field is available for backwards compatability

@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css?family=Montserrat:700');
+
+body, html {
+	padding: 0;
+	margin: 0;
+	font-family: 'Montserrat', sans-serif;
+	font-size: 24px;
+	line-height: 30px;
+	font-weight: 700;
+	color: white;
+}
+
+#king {
+	padding: 5px;
+	margin: 5px;
+	background-color: rgba(0,0,0,0.6);
+	border-radius: 10px;
+	box-sizing: border-box;
+	min-width: 250px;
+}
+
+#info {
+	height: 30px;
+	padding: 6px;
+}
+
+#vitals {
+	height: 30px;
+	border-radius: 8px;
+	text-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
+	padding: 6px 6px 6px 50px;
+	background-color: rgba(0, 0, 0, 0.5);
+	position: relative;
+}
+
+#vitals .vitals-label {
+	display: inline-block;
+	position: absolute;
+	left: 12px;
+}
+
+#vitals .lifebar {
+	height: inherit;
+	border-radius: inherit;
+	position: relative;
+}
+
+.lifebar .health {
+	height: inherit;
+	z-index: 10;
+	background-color: #41b200;	
+	border-radius: inherit;
+	position: absolute;
+}
+
+.lifebar .damage {
+	height: inherit;
+	z-index: 5;
+	border-radius: inherit;
+	position: absolute;
+	background-color: #990000;
+}
+
+.lifebar .healing {
+	height: inherit;
+	z-index: 3;
+	border-radius: inherit;
+	position: absolute;
+	background-color: #999900;
+}
+
+.lifebar .shield {
+	padding: 4px;
+	margin: -4px -4px 0;
+	height: inherit;
+	z-index: 15;
+	background-image: linear-gradient(rgba(255,255,255,0.25), rgba(255,255,255,0.05));
+	background-color: rgba(0, 192, 255, 0.5);
+	border-radius: inherit;
+	position: absolute;	
+}
+
+.lifebar .popout {
+	box-shadow: 0 2px 2px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+.lifebar .statsbar {
+	height: inherit;
+	width: 100%;
+	z-index: 20;
+	text-align: center;
+	position: absolute;
+	overflow: hidden;
+}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+	<head lang="en">
+			<meta charset="UTF-8">
+			<title>BKB Default Overlay - sliding shield bar</title>
+			<link rel="stylesheet" type="text/css" href="style.css">			
+			<link rel="stylesheet" href="http://cdn.materialdesignicons.com/1.9.32/css/materialdesignicons.min.css">
+			<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+			<script src="script.js"></script>
+			<script src="../API_Key.js"></script>
+			<script src="../BitKingBattlesSettings.js"></script>
+	</head>
+	<body>
+		<div id="king">
+			<div id="info">
+				<span class="name"></span>
+			</div>
+			<div id="vitals">
+				<div class="vitals-label mdi mdi-24px mdi-light mdi-heart-broken"></div>
+					<div class="lifebar">
+						<div class="healing popout" style="width:0%"></div>
+						<div class="damage popout" style="width:0%"></div>
+						<div class="health popout" style="width:0%"></div>
+						<div class="shield" style="width:0%; display:none;"></div>
+						<div class="vitals-stats statsbar">
+							<span class="current-health">0</span> / <span class="maximum-health">0</span>
+						</div>
+						<div class="shield-stats statsbar">
+							<span class="durability"></span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- audio -->
+			<audio id="audio_damage_health_normal" src="./sounds/damage_health_normal.mp3"></audio>
+			<audio id="audio_damage_health_critical" src="./sounds/damage_health_critical.mp3"></audio>
+			<audio id="audio_damage_shield_normal" src="./sounds/damage_shield_normal.mp3"></audio>
+			<audio id="audio_damage_shield_critical" src="./sounds/damage_shield_critical.mp3"></audio>
+			<audio id="audio_heal_normal" src="./sounds/heal_normal.mp3"></audio>
+			<audio id="audio_heal_critical" src="./sounds/heal_critical.mp3"></audio>
+			<audio id="audio_death" src="./sounds/death.mp3"></audio>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,291 @@
+﻿{
+	"output_file": "BitKingBattlesSettings.json",
+	"bkb_current_name": {
+		"type": "textbox",
+		"label": "User Name",
+		"value": "ankhbot",	
+		"tooltip": "Username of the current king.\r\nONLY USE LOWERCASE LETTERS AND _",
+		"group": "Current King"
+	},
+	"bkb_current_display": {
+		"type": "textbox",
+		"label": "Display Name",
+		"value": "AnkhBot",	
+		"tooltip": "Display name of the current king.\r\nCan contain unicode characters.",
+		"group": "Current King"
+	},
+	"bkb_current_hp": {
+		"type": "numberbox",
+		"label": "Health",
+		"value": 100,
+		"tooltip": "Health of the current king, cannot exceed set maximum health.",
+		"group": "Current King"
+	},
+	"bkb_current_mhp": {
+		"type": "numberbox",
+		"label": "Maximum Health",
+		"value": 200,
+		"tooltip": "Maximum health of the current king.",
+		"group": "Current King"
+	},
+	"bkb_current_shield": {
+		"type": "numberbox",
+		"label": "Shield Durability",
+		"value": 10,
+		"tooltip": "Shield durability of the current king.",
+		"group": "Current King"
+	},
+	"bkb_current_mshield": {
+		"type": "numberbox",
+		"label": "Maximum Shield Durability",
+		"value": 10,
+		"tooltip": "Maximum shield durability of the current king.",
+		"group": "Current King"
+	},
+	"bkb_current_avataruri": {
+		"type": "textbox",
+		"label": "Avatar Uri",
+		"value": "",	
+		"tooltip": "Twitch Avatar Uri of the current king.\r\nNOT IMPLEMENTED YET!",
+		"group": "Current King"
+	},
+	"bkb_new_hp": {
+		"type": "numberbox",
+		"label": "Health",
+		"value": 100,
+		"tooltip": "Health of the new king, cannot exceed set maximum health.\r\nIn 'Overkill Mode' and 'Strength Mode' this value is ignored.",
+		"group": "New King Settings"
+	},
+	"bkb_new_mhp": {
+		"type": "numberbox",
+		"label": "Maximum Health",
+		"value": 200,
+		"tooltip": "Maximum health of the new king.\r\nIn 'Overkill Mode' this value is added to the overkill value.\r\nIn 'Strength Mode' this acts as minimum health value.",
+		"group": "New King Settings"
+	},
+	"bkb_new_shield": {
+		"type": "numberbox",
+		"label": "Shield Durability",
+		"value": 10,
+		"tooltip": "Shield durability of the new king.\r\nIn 'Shield Mode' this value is ignored.",
+		"group": "New King Settings"
+	},
+	"bkb_new_mode": {
+		"type": "dropdown",
+		"label": "Mode",
+		"items": ["Shield Mode", "Overkill Mode", "Strength Mode", "Fixed Mode"],
+		"value": "Shield Mode",
+		"tooltip": "[Shield] Exceeding damage done to previous king will be used as shield, that has to be broken first and can't be healed.\r\n[Overkill] Exceeding damage will be added on top to the set base maximum health and is fully healed.\r\n[Strength Mode] Total bits use will determain the new health, disregarding the previous king health.\r\n[Fixed] New king will have fixed set values as health and shield.",		
+		"group": "New King Settings"
+	},
+	"bkb_other_critpercent": {
+		"type": "numberbox",
+		"label": "Critical Percentage",
+		"value": 80,
+		"tooltip": "Percentage that determines if the action will be a critical heal or damage. A shield break or kill is always considered critical, and therefore have their own outputs.\r\nFor critical damage the % of current health or shield durability.\r\nFor critical heal the % of the missing health.",
+		"group": "Other"
+	},
+	"bkb_chat_healnorm": {
+		"type": "textbox",
+		"label": "Normal Heal Message",
+		"value": "{name} healed up {healing} health with a {totalbits} health potion.",	
+		"tooltip": "Message when current king heals.\r\n{name} Healers Name\r\n{healing} Total Healing\r\n{totalbits} Total Bits Amount\r\n{health} 'Before Healing' Health Value\r\n{maxhealth} Maximum Health Value\r\n{shield} Shield Durability\r\n{newhealth} 'After Healing' Health Value",
+		"group": "On Heal Chat Output"
+	},
+	"bkb_chat_healcrit": {
+		"type": "textbox",
+		"label": "Critical Heal Message",
+		"value": "{name} critically healed up {healing} health with a {totalbits} health potion!",	
+		"tooltip": "Message when current king critically heals.\r\n{name} Healers Name\r\n{healing} Total Healing\r\n{totalbits} Total Bits Amount\r\n{health} 'Before Healing' Health Value\r\n{maxhealth} Maximum Health Value\r\n{shield} Shield Durability\r\n{newhealth} 'After Healing' Health Value",
+		"group": "On Heal Chat Output"
+	},
+	"bkb_chat_healfull": {
+		"type": "textbox",
+		"label": "Full Heal Message",
+		"value": "{name} fully healed up by using a {totalbits} health potion!",	
+		"tooltip": "Message when current king fully heals.\r\n{name} Healers Name\r\n{healing} Total Healing\r\n{totalbits} Total Bits Amount\r\n{health} 'Before Healing' Health Value\r\n{maxhealth} Maximum Health Value\r\n{shield} Shield Durability\r\n{newhealth} 'After Healing' Health Value",
+		"group": "On Heal Chat Output"
+	},
+	"bkb_chat_healfail": {
+		"type": "textbox",
+		"label": "Fail Heal Message",
+		"value": "{name} tried to used a {totalbits} health potion but it had no effect.",	
+		"tooltip": "Message when current king healed while at max health.\r\n{name} Healers Name\r\n{healing} Total Healing\r\n{totalbits} Total Bits Amount\r\n{health} 'Before Healing' Health Value\r\n{maxhealth} Maximum Health Value\r\n{shield} Shield Durability",
+		"group": "On Heal Chat Output"
+	},
+	"bkb_chat_killnormal": {
+		"type": "textbox",
+		"label": "Kill While Unshielded Message",
+		"value": "{combatiant} mustered up {totalbits} attack power to kill the defenceless {ckname} and successfully did so by dealing {dmgtotal} health damage!",	
+		"tooltip": "Message when current king is killed while not shielded.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{ckname} Current Kings Name\r\n{ckhealth} Current Kings Health Value\r\n{ckmaxhealth} Current Kings Max Health Value\r\n{ckshield} Current Kings Shield Durability\r\n{nkhealth} New Kings Health Value\r\n{nkmaxhealth} New Kings Max Health Value\r\n{nkshield} New Kings Shield Durability",
+		"group": "On Kill Chat Output"
+	},
+	"bkb_chat_killshield": {
+		"type": "textbox",
+		"label": "Kill While Shielded Message",
+		"value": "{combatiant} mustered up {totalbits} attack power to kill the shielded {ckname} and successfully did so by dealing {dmgshield} shield- and {dmghealth} health- damage!",	
+		"tooltip": "Message when current king is killed while shielded.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{ckname} Current Kings Name\r\n{ckhealth} Current Kings Health Value\r\n{ckmaxhealth} Current Kings Max Health Value\r\n{ckshield} Current Kings Shield Durability\r\n{nkhealth} New Kings Health Value\r\n{nkmaxhealth} New Kings Max Health Value\r\n{nkshield} New Kings Shield Durability",
+		"group": "On Kill Chat Output"
+	},
+	"bkb_chat_breakshieldhealthnone": {
+		"type": "textbox",
+		"label": "Break Shield No Health Damage Message",
+		"value": "{combatiant} dealt a heavy blow of {dmgshield} damage to the shield of {name} and tore it apart!",	
+		"tooltip": "Message when the current kings shield breaks but no health damage was done.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{name} Current Kings Name\r\n{health} Current Kings Health\r\n{maxhealth} Current Kings Max Health\r\n{shield} Current Kings Shield Durability",
+		"group": "On Damage Chat Output Settings"
+	},
+	"bkb_chat_breakshieldhealthnorm": {
+		"type": "textbox",
+		"label": "Break Shield Normal Health Damage Message",
+		"value": "{combatiant} skillfully broke down the shield of {name} and managed to do {dmghealth} health damage!",	
+		"tooltip": "Message when the current kings shield breaks and takes normal health damage.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{name} Current Kings Name\r\n{health} Current Kings Health\r\n{maxhealth} Current Kings Max Health\r\n{shield} Current Kings Shield Durability",
+		"group": "On Damage Chat Output Settings"
+	},
+	"bkb_chat_breakshieldhealthcrit": {
+		"type": "textbox",
+		"label": "Break Shield Critical Health Damage Message",
+		"value": "{combatiant} tore down the shield of {name} and dealth a massive blow of {dmghealth} health damage!",	
+		"tooltip": "Message when the current kings shield breaks and takes critical health damage.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{name} Current Kings Name\r\n{health} Current Kings Health\r\n{maxhealth} Current Kings Max Health\r\n{shield} Current Kings Shield Durability",
+		"group": "On Damage Chat Output Settings"
+	},
+	"bkb_chat_shieldhitnorm": {
+		"type": "textbox",
+		"label": "Normal Shield Damage Message",
+		"value": "{combatiant} dented the shield of {name} with an attack of {dmgshield}.",	
+		"tooltip": "Message when the current kings shield takes normal damage.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{name} Current Kings Name\r\n{health} Current Kings Health\r\n{maxhealth} Current Kings Max Health\r\n{shield} Current Kings Shield Durability",
+		"group": "On Damage Chat Output Settings"
+	},
+	"bkb_chat_shieldhitcrit": {
+		"type": "textbox",
+		"label": "Critical Shield Damage Message",
+		"value": "{combatiant} critically damaged the shield of {name} with an attack of {dmgshield}!",	
+		"tooltip": "Message when the current kings shield takes critical damage.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{name} Current Kings Name\r\n{health} Current Kings Health\r\n{maxhealth} Current Kings Max Health\r\n{shield} Current Kings Shield Durability",
+		"group": "On Damage Chat Output Settings"
+	},
+	"bkb_chat_healthhitnorm": {
+		"type": "textbox",
+		"label": "Normal Health Damage Message",
+		"value": "{combatiant} attacks and managed to scrape {dmghealth} health of {name}.",	
+		"tooltip": "Message when the current king takes normal health damage.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{name} Current Kings Name\r\n{health} Current Kings Health\r\n{maxhealth} Current Kings Max Health\r\n{shield} Current Kings Shield Durability",
+		"group": "On Damage Chat Output Settings"
+	},
+	"bkb_chat_healthhitcrit": {
+		"type": "textbox",
+		"label": "Critical Health Damage Message",
+		"value": "{combatiant} dealt a critical blow of {dmghealth} health damage on {name}!",	
+		"tooltip": "Message when the current king takes critical health damage.\r\n{combatiant} Attackers Name\r\n{dmghealth} Health Damage\r\n{dmgshield} Shield Damage\r\n{dmgtotal} Total Damage\r\n{totalbits} Total Bits Amount\r\n{name} Current Kings Name\r\n{health} Current Kings Health\r\n{maxhealth} Current Kings Max Health\r\n{shield} Current Kings Shield Durability",
+		"group": "On Damage Chat Output Settings"
+	},
+	"bkb_overlay_col_health": {
+		"type": "colorpicker",
+		"label": "Health Bar Color",
+		"value": "rgba(65,178,0,1)",
+		"tooltip": "The color of the health bar.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_col_shield": {
+		"type": "colorpicker",
+		"label": "Shield Bar Color",
+		"value": "rgba(0,192,255,0.5)",
+		"tooltip": "The color of the shield bar.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_col_damage": {
+		"type": "colorpicker",
+		"label": "Damage Bar Color",
+		"value": "rgba(153,0,0,1)",
+		"tooltip": "The color of the 'damage' bar that lags behind the health bar.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_col_healing": {
+		"type": "colorpicker",
+		"label": "Healing Bar Color",
+		"value": "rgba(144,144,0,1)",
+		"tooltip": "The color of the 'healing' bar that shoots out before the health bar.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_col_primary": {
+		"type": "colorpicker",
+		"label": "Primary Background Color",
+		"value": "rgba(0,0,0,0.6)",
+		"tooltip": "A primary background color, overlay style depended.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_col_secondary": {
+		"type": "colorpicker",
+		"label": "Secondary Brackground Color",
+		"value": "rgba(0,0,0,0.5)",
+		"tooltip": "A secondary background color, overlay style depended.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_vol_health_norm": {
+		"type": "slider",
+		"label": "Volume Health Hit Normal",
+		"value": 0.5,
+		"min": 0.0,
+		"max": 1.0,
+		"ticks": 0.05,
+		"tooltip": "The volume of the normal health hit sound clip.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_vol_health_crit": {
+		"type": "slider",
+		"label": "Volume Health Hit Critical",
+		"value": 0.5,
+		"min": 0.0,
+		"max": 1.0,
+		"ticks": 0.05,
+		"tooltip": "The volume of the critical health hit sound clip.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_vol_shield_norm": {
+		"type": "slider",
+		"label": "Volume Shield Hit Normal",
+		"value": 0.5,
+		"min": 0.0,
+		"max": 1.0,
+		"ticks": 0.05,
+		"tooltip": "The volume of the normal shield hit sound clip.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_vol_shield_crit": {
+		"type": "slider",
+		"label": "Volume Shield Hit Critical",
+		"value": 0.5,
+		"min": 0.0,
+		"max": 1.0,
+		"ticks": 0.05,
+		"tooltip": "The volume of the critical shield hit sound clip.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_vol_heal_norm": {
+		"type": "slider",
+		"label": "Volume Heal Normal",
+		"value": 0.5,
+		"min": 0.0,
+		"max": 1.0,
+		"ticks": 0.05,
+		"tooltip": "The volume of the normal heal sound clip.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_vol_heal_crit": {
+		"type": "slider",
+		"label": "Volume Heal Critical",
+		"value": 0.5,
+		"min": 0.0,
+		"max": 1.0,
+		"ticks": 0.05,
+		"tooltip": "The volume of the critical heal sound clip.",
+		"group": "Overlay Settings"
+	},
+	"bkb_overlay_vol_death": {
+		"type": "slider",
+		"label": "Volume death",
+		"value": 0.5,
+		"min": 0.0,
+		"max": 1.0,
+		"ticks": 0.05,
+		"tooltip": "The volume of the death sound clip.",
+		"group": "Overlay Settings"
+	}
+}
