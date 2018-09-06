@@ -121,10 +121,12 @@ class DefaultSettings():
             self.bkb_overlay_vol_heal_norm = 0.5
             self.bkb_overlay_vol_heal_crit = 0.5
             self.bkb_overlay_vol_death = 0.5
+            self.use_bits = True
+            self.use_points = True
 
     def VerifyValues(self):
         """ Verify set stored values and correct them if needed. """
-        # User name verification
+        # Username verification
         if not VerifyUsernameRegex.search(self.bkb_current_name):
             ctypes.windll.user32.MessageBoxW(0,
                                              u"Warning set user name for 'Bit King Battles' is invalid.\r\n"
@@ -195,6 +197,14 @@ class DefaultSettings():
             self.bkb_current_shield,
             self.bkb_current_mshield
         )
+
+    def CurrencyUsed(self):
+        if self.use_bits is True and self.use_points is True:
+            return 2
+        elif self.use_bits is True:
+            return 1
+        else:
+            return 0
 
 
 class King():
@@ -317,6 +327,14 @@ def GetPercentage(part, whole):
         return round(100.0 * part / whole, 2)
 
 
+def RepresentsInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
 # ---------------------------------------
 # Initialize Data on Load
 # ---------------------------------------
@@ -407,408 +425,332 @@ def ReloadSettings(data):
 # Execute Data And Process Messages
 # ---------------------------------------
 def Execute(data):
-    # Continue if it is a chat message, which is cheers are send as
+    # Continue if it is a chat message
+    currencyused = None
+    currencyspent = 0
     if data.IsChatMessage():
-
         # Testing command use !bkbtest <bit-amount> and you will 'use' bits
         # If actual chat message, apply regex on raw-message to extract bits info
         if data.GetParam(0).lower() == "!bkbtest" and Parent.HasPermission(data.User, "caster", ""):
             getBitsSearch = GetBitsRegex.search("@bits=" + data.GetParam(1) + ";")
+            currencyused = 'bits'
+        elif data.GetParam(0).lower() == "!bkb" and RepresentsInt(data.GetParam(1)):
+            getBitsSearch = GetBitsRegex.search("@bits=" + data.GetParam(1) + ";")
+            currencyused = 'points'
+        elif data.GetParam(0).lower() == "!bkb" and RepresentsInt(data.GetParam(1)) is False:
+            Parent.SendStreamMessage('Usage: !bkb <points>')
+            return False
         else:
             getBitsSearch = GetBitsRegex.search(data.RawData)
+            currencyused = 'bits'
+        userPoints = Parent.GetPoints(data.User)
+        currencyspent = int(getBitsSearch.group("amount"))
+        Parent.Log("BKB", "currencyspent = {0}".format(str(currencyspent)))
+        Parent.Log("BKB", "getBitsSearch = {0}".format(str(getBitsSearch)))
+        Parent.Log("BKB", "getBitsSearch.group('amount') = " + getBitsSearch.group("amount"))
 
-        # Continue if there is a regex result and a bits amount is given
-        if getBitsSearch and getBitsSearch.group("amount") != "":
+    # Continue if there is a regex result and a bits/points amount is given
+    if currencyspent > 0:
 
-            # Globals
-            global CurrentKing
+        # Globals
+        global CurrentKing
 
-            # Get display-name of bit user, if unavailable use username
-            getDisplayNameSearch = GetDisplayNameRegex.search(data.RawData)
-            displayName = getDisplayNameSearch.group("name") if getDisplayNameSearch.group("name") else data.User
+        # Get display-name of user, if unavailable use username
+        getDisplayNameSearch = GetDisplayNameRegex.search(data.RawData)
+        displayName = getDisplayNameSearch.group("name") if getDisplayNameSearch.group("name") else data.User
 
-            # Convert given bits value to integer
-            bitsAmount = int(getBitsSearch.group("amount"))
+        # if currencyused is 'points':
+        #     if Parent.GetPoints(data.User) >= currencyspent:
+        #         Parent.SetPoints(data.User, Parent.GetPoints(data.User) - currencyspent)
+        #     else:
+        #         # TODO: Add "not enough points" message to DefaultSettings()
+        #         Parent.SendStreamMessage("Sorry " + displayName + ", you don't have enough points")
 
-            # Current King uses bits -> Healing
-            if data.User == CurrentKing.UserName:
+        # Current King uses bits -> Healing
+        if data.User == CurrentKing.UserName:
 
-                # Clip the heal amount to max health
-                clippedAmount = bitsAmount if CurrentKing.Health + bitsAmount < CurrentKing.MaxHealth else CurrentKing.MaxHealth - CurrentKing.Health
+            # Clip the heal amount to max health
+            clippedAmount = currencyspent if CurrentKing.Health + currencyspent < CurrentKing.MaxHealth else CurrentKing.MaxHealth - CurrentKing.Health
 
-                # It is a crit heal if heal amount is equal or bigger than the set % of missing health of current king
-                isCritHeal = True if clippedAmount >= (
-                        CurrentKing.MaxHealth - CurrentKing.Health) * Settings.bkb_other_critpercent / 100.0 else False
+            # It is a crit heal if heal amount is equal or bigger than the set % of missing health of current king
+            isCritHeal = True if clippedAmount >= (
+                    CurrentKing.MaxHealth - CurrentKing.Health) * Settings.bkb_other_critpercent / 100.0 else False
 
-                # If is fully healed
-                isFullyHealed = True if CurrentKing.Health + clippedAmount == CurrentKing.MaxHealth else False
+            # If is fully healed
+            isFullyHealed = True if CurrentKing.Health + clippedAmount == CurrentKing.MaxHealth else False
 
-                # Has a shield or not (not used with healing, just info to send)
-                hasShield = True if CurrentKing.Shield > 0 else False
+            # Has a shield or not (not used with healing, just info to send)
+            hasShield = True if CurrentKing.Shield > 0 else False
 
-                # Set Combat data
-                combatData = CombatData(
-                    data.User,  # Combatiant Username
-                    displayName,  # Combatiant Display name
-                    False,  # Damage (True) or Healing (False)
-                    0,  # Health Damage
-                    False,  # Health Critical Hit
-                    0,  # Shield Damage
-                    False,  # Shield Critical Hit
-                    clippedAmount,  # Healing Amount
-                    isCritHeal,  # Critical Heal
-                    hasShield,  # Has/Had Shield
-                    False,  # Shield Broke
-                    False,  # Current King is Killed
-                    isFullyHealed,  # Fully Healed up
-                    clippedAmount,  # Clipped total to max health
-                    bitsAmount  # Non-clipped total
-                )
+            # Set Combat data
+            combatData = CombatData(
+                data.User,  # Combatiant Username
+                displayName,  # Combatiant Display name
+                False,  # Damage (True) or Healing (False)
+                0,  # Health Damage
+                False,  # Health Critical Hit
+                0,  # Shield Damage
+                False,  # Shield Critical Hit
+                clippedAmount,  # Healing Amount
+                isCritHeal,  # Critical Heal
+                hasShield,  # Has/Had Shield
+                False,  # Shield Broke
+                False,  # Current King is Killed
+                isFullyHealed,  # Fully Healed up
+                clippedAmount,  # Clipped total to max health
+                currencyspent  # Non-clipped total
+            )
 
-                # Heal while at maximum health
-                if combatData.HealingAmount == 0:
+            # Heal while at maximum health
+            if combatData.HealingAmount == 0:
 
-                    # Chat Message Response: FAIL HEAL MESSAGE
-                    # If incorrect {key} is given print raw message and log it.
-                    try:
-                        Parent.SendStreamMessage(Settings.bkb_chat_healfail.format(
-                            name=combatData.DisplayName, healing=combatData.HealingAmount,
-                            totalbits=combatData.TotalAmount, health=CurrentKing.Health,
-                            maxhealth=CurrentKing.MaxHealth, shield=CurrentKing.Shield
-                        ))
-                    except:
-                        Parent.SendStreamMessage(Settings.bkb_chat_healfail)
-                        Parent.Log("BKB", "Incorrect parameter given in 'FAIL HEAL MESSAGE'.")
+                # Chat Message Response: FAIL HEAL MESSAGE
+                # If incorrect {key} is given print raw message and log it.
+                try:
+                    Parent.SendStreamMessage(Settings.bkb_chat_healfail.format(
+                        name=combatData.DisplayName, healing=combatData.HealingAmount,
+                        totalbits=combatData.TotalAmount, health=CurrentKing.Health,
+                        maxhealth=CurrentKing.MaxHealth, shield=CurrentKing.Shield
+                    ))
+                except:
+                    Parent.SendStreamMessage(Settings.bkb_chat_healfail)
+                    Parent.Log("BKB", "Incorrect parameter given in 'FAIL HEAL MESSAGE'.")
 
-                # Heal while damaged
-                else:
-
-                    # Set 'new' king values with healed health
-                    newKing = King.CopyKing(CurrentKing)
-                    newKing.Healing(combatData.HealingAmount)
-
-                    # Send data to websocket > EVENT_BKB_HEAL
-                    Parent.BroadcastWsEvent("EVENT_BKB_HEAL", WsDataStruct(combatData, CurrentKing, newKing).ToJSON())
-
-                    # Is fully healed up
-                    if combatData.IsFullyHealed:
-
-                        # Chat Message Responses: FULL HEAL MESSAGE
-                        # If incorrect {key} is given print raw message and log it.
-                        try:
-                            Parent.SendStreamMessage(Settings.bkb_chat_healfull.format(
-                                name=combatData.DisplayName, healing=combatData.HealingAmount,
-                                totalbits=combatData.TotalAmount, health=CurrentKing.Health,
-                                maxhealth=CurrentKing.MaxHealth, shield=CurrentKing.Shield,
-                                newhealth=newKing.Health
-                            ))
-                        except:
-                            Parent.SendStreamMessage(Settings.bkb_chat_healfull)
-                            Parent.Log("BKB", "Incorrect parameter given in 'FULL HEAL MESSAGE'.")
-
-                    # It is a critical heal
-                    elif combatData.IsHealCrit:
-
-                        # Chat Message Responses: CRITICAL HEAL MESSAGE
-                        # If incorrect {key} is given print raw message and log it.
-                        try:
-                            Parent.SendStreamMessage(Settings.bkb_chat_healcrit.format(
-                                name=combatData.DisplayName, healing=combatData.HealingAmount,
-                                totalbits=combatData.TotalAmount, health=CurrentKing.Health,
-                                maxhealth=CurrentKing.MaxHealth, shield=CurrentKing.Shield,
-                                newhealth=newKing.Health
-                            ))
-                        except:
-                            Parent.SendStreamMessage(Settings.bkb_chat_healcrit)
-                            Parent.Log("BKB", "Incorrect parameter given in 'CRITICAL HEAL MESSAGE'.")
-
-                    # It is a normal heal
-                    else:
-
-                        # Chat Message Responses: NORMAL HEAL MESSAGE
-                        # If incorrect {key} is given print raw message and log it.
-                        try:
-                            Parent.SendStreamMessage(Settings.bkb_chat_healnorm.format(
-                                name=combatData.DisplayName, healing=combatData.HealingAmount,
-                                totalbits=combatData.TotalAmount, health=CurrentKing.Health,
-                                maxhealth=CurrentKing.MaxHealth, shield=CurrentKing.Shield,
-                                newhealth=newKing.Health
-                            ))
-                        except:
-                            Parent.SendStreamMessage(Settings.bkb_chat_healnorm)
-                            Parent.Log("BKB", "Incorrect parameter given in 'NORMAL HEAL MESSAGE'.")
-
-                    # Set new king data as current king
-                    CurrentKing = newKing
-
-            # Another person uses bits -> Damage
+            # Heal while damaged
             else:
 
-                # Clip damage amount to current health + shield
-                clippedAmount = bitsAmount if bitsAmount < CurrentKing.Health + CurrentKing.Shield else CurrentKing.Health + CurrentKing.Shield
+                # Set 'new' king values with healed health
+                newKing = King.CopyKing(CurrentKing)
+                newKing.Healing(combatData.HealingAmount)
 
-                # Has a shield or not
-                hasShield = True if CurrentKing.Shield > 0 else False
+                # Send data to websocket > EVENT_BKB_HEAL
+                Parent.BroadcastWsEvent("EVENT_BKB_HEAL", WsDataStruct(combatData, CurrentKing, newKing).ToJSON())
 
-                # Calculate damage done to shield
-                shieldDamage = 0 if not hasShield else (
-                    CurrentKing.Shield if clippedAmount >= CurrentKing.Shield else clippedAmount)
+                # Is fully healed up
+                if combatData.IsFullyHealed:
 
-                # It is a crit shield damage if damage amount is equal or bigger than the set % of current shield durability
-                isCritShield = True if hasShield and shieldDamage >= CurrentKing.Shield * Settings.bkb_other_critpercent / 100.0 else False
+                    # Chat Message Responses: FULL HEAL MESSAGE
+                    # If incorrect {key} is given print raw message and log it.
+                    try:
+                        Parent.SendStreamMessage(Settings.bkb_chat_healfull.format(
+                            name=combatData.DisplayName, healing=combatData.HealingAmount,
+                            totalbits=combatData.TotalAmount, health=CurrentKing.Health,
+                            maxhealth=CurrentKing.MaxHealth, shield=CurrentKing.Shield,
+                            newhealth=newKing.Health
+                        ))
+                    except:
+                        Parent.SendStreamMessage(Settings.bkb_chat_healfull)
+                        Parent.Log("BKB", "Incorrect parameter given in 'FULL HEAL MESSAGE'.")
 
-                # It is a shield break if the shield is destroyed
-                isShieldBreak = True if hasShield and shieldDamage == CurrentKing.Shield else False
+                # It is a critical heal
+                elif combatData.IsHealCrit:
 
-                # Calculate damage done to health
-                healthDamage = 0 if CurrentKing.Shield >= clippedAmount else clippedAmount - CurrentKing.Shield
+                    # Chat Message Responses: CRITICAL HEAL MESSAGE
+                    # If incorrect {key} is given print raw message and log it.
+                    try:
+                        Parent.SendStreamMessage(Settings.bkb_chat_healcrit.format(
+                            name=combatData.DisplayName, healing=combatData.HealingAmount,
+                            totalbits=combatData.TotalAmount, health=CurrentKing.Health,
+                            maxhealth=CurrentKing.MaxHealth, shield=CurrentKing.Shield,
+                            newhealth=newKing.Health
+                        ))
+                    except:
+                        Parent.SendStreamMessage(Settings.bkb_chat_healcrit)
+                        Parent.Log("BKB", "Incorrect parameter given in 'CRITICAL HEAL MESSAGE'.")
 
-                # It is a crit health damage if damage amount (minus shield durability) is equal or bigger than the set % of current health
-                isCritDamage = True if healthDamage >= CurrentKing.Health * Settings.bkb_other_critpercent / 100.0 else False
-
-                # It is a kill if the damage is equal to the health
-                isKill = True if healthDamage == CurrentKing.Health else False
-
-                # Set Combat data
-                combatData = CombatData(
-                    data.User,  # Combatiant username
-                    displayName,  # Combatiant Display name
-                    True,  # Damage (True) or Healing (False)
-                    healthDamage,  # Health Damage
-                    isCritDamage,  # Health Critical Hit
-                    shieldDamage,  # Shield Damage
-                    isCritShield,  # Shield Critical Hit
-                    0,  # Healing Amount
-                    False,  # Critical Heal
-                    hasShield,  # Has/Had Shield
-                    isShieldBreak,  # Shield Broke
-                    isKill,  # Current King is Killed
-                    False,  # Fully Healed up
-                    clippedAmount,  # Clipped total to max health
-                    bitsAmount  # Non-clipped total
-                )
-
-                # King is killed
-                if combatData.IsKill:
-
-                    # Shield Mode
-                    if Settings.bkb_new_mode == "Shield Mode":
-                        # Calculate new shield value
-                        newShield = combatData.TotalAmount - combatData.ClippedAmount
-                        # Create new king
-                        newKing = King(
-                            combatData.UserName,
-                            combatData.DisplayName,
-                            "",  # AVATAR NOT IMPLEMENTED YET
-                            Settings.bkb_new_hp,
-                            Settings.bkb_new_mhp,
-                            newShield,
-                            newShield
-                        )
-
-                    # Overkill Mode
-                    elif Settings.bkb_new_mode == "Overkill Mode":
-                        # Calculate new maximum health
-                        newMaxHealth = Settings.bkb_new_mhp + combatData.TotalAmount - combatData.ClippedAmount
-                        # Create new king
-                        newKing = King(
-                            combatData.UserName,
-                            combatData.DisplayName,
-                            "",  # AVATAR NOT IMPLEMENTED YET
-                            newMaxHealth,
-                            newMaxHealth,
-                            Settings.bkb_new_shield,
-                            Settings.bkb_new_shield
-                        )
-
-                    # Strength Mode
-                    elif Settings.bkb_new_mode == "Strength Mode":
-                        # Calculate new maximum health
-                        newMaxHealth = Settings.bkb_new_mhp if combatData.TotalAmount < Settings.bkb_new_mhp else combatData.TotalAmount
-                        # Create new king
-                        newKing = King(
-                            combatData.UserName,
-                            combatData.DisplayName,
-                            "",  # AVATAR NOT IMPLEMENTED YET
-                            newMaxHealth,
-                            newMaxHealth,
-                            Settings.bkb_new_shield,
-                            Settings.bkb_new_shield
-                        )
-
-                    # Fixed Mode
-                    else:
-                        # Create new king
-                        newKing = King(
-                            combatData.UserName,
-                            combatData.DisplayName,
-                            "",  # AVATAR NOT IMPLEMENTED YET
-                            Settings.bkb_new_hp,
-                            Settings.bkb_new_mhp,
-                            Settings.bkb_new_shield,
-                            Settings.bkb_new_shield
-                        )
-
-                    # Send data over to websocket > EVENT_BKB_KILL
-                    Parent.BroadcastWsEvent("EVENT_BKB_KILL", WsDataStruct(combatData, CurrentKing, newKing).ToJSON())
-
-                    # Killed while shielded
-                    if CurrentKing.Shield > 0:
-
-                        # Chat Message Responses: KILL WHILE SHIELDED MESSAGE
-                        # If incorrect {key} is given print raw message and log it.
-                        try:
-                            Parent.SendStreamMessage(Settings.bkb_chat_killshield.format(
-                                combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
-                                dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
-                                totalbits=combatData.TotalAmount, ckname=CurrentKing.DisplayName,
-                                ckhealth=CurrentKing.Health, ckmaxhealth=CurrentKing.MaxHealth,
-                                ckshield=CurrentKing.Shield, nkhealth=newKing.Health,
-                                nkmaxhealth=newKing.MaxHealth, nkshield=newKing.Shield
-                            ))
-                        except:
-                            Parent.SendStreamMessage(Settings.bkb_chat_killshield)
-                            Parent.Log("BKB", "Incorrect parameter given in 'KILL WHILE SHIELDED MESSAGE'.")
-
-                    # Killed while defenceless
-                    else:
-
-                        # Chat Message Responses: KILL WHILE UNSHIELDED MESSAGE
-                        # If incorrect {key} is given print raw message and log it.
-                        try:
-                            Parent.SendStreamMessage(Settings.bkb_chat_killnormal.format(
-                                combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
-                                dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
-                                totalbits=combatData.TotalAmount, ckname=CurrentKing.DisplayName,
-                                ckhealth=CurrentKing.Health, ckmaxhealth=CurrentKing.MaxHealth,
-                                ckshield=CurrentKing.Shield, nkhealth=newKing.Health,
-                                nkmaxhealth=newKing.MaxHealth, nkshield=newKing.Shield
-                            ))
-                        except:
-                            Parent.SendStreamMessage(Settings.bkb_chat_killnormal)
-                            Parent.Log("BKB", "Incorrect parameter given in 'KILL WHILE UNSHIELDED MESSAGE'.")
-
-                    # Set new king data as current king
-                    CurrentKing = newKing
-
-                # King is not killed
+                # It is a normal heal
                 else:
 
-                    # Set 'new' king values with damaged health / shield
-                    newKing = King.CopyKing(CurrentKing)
-                    newKing.Damage(combatData.HealthDamage, combatData.ShieldDamage)
+                    # Chat Message Responses: NORMAL HEAL MESSAGE
+                    # If incorrect {key} is given print raw message and log it.
+                    try:
+                        Parent.SendStreamMessage(Settings.bkb_chat_healnorm.format(
+                            name=combatData.DisplayName, healing=combatData.HealingAmount,
+                            totalbits=combatData.TotalAmount, health=CurrentKing.Health,
+                            maxhealth=CurrentKing.MaxHealth, shield=CurrentKing.Shield,
+                            newhealth=newKing.Health
+                        ))
+                    except:
+                        Parent.SendStreamMessage(Settings.bkb_chat_healnorm)
+                        Parent.Log("BKB", "Incorrect parameter given in 'NORMAL HEAL MESSAGE'.")
 
-                    # Send data over to websocket > EVENT_BKB_DAMAGE
-                    Parent.BroadcastWsEvent("EVENT_BKB_DAMAGE", WsDataStruct(combatData, CurrentKing, newKing).ToJSON())
+                # Set new king data as current king
+                CurrentKing = newKing
 
-                    # King is shielded
-                    if combatData.HasShield:
+        # Another person uses bits -> Damage
+        else:
 
-                        # Shield breaks and takes health damage
-                        # if combatData.IsShieldBreak and combatData.HealthDamage > 0:
-                        if combatData.HealthDamage > 0:
+            # Clip damage amount to current health + shield
+            clippedAmount = currencyspent if currencyspent < CurrentKing.Health + CurrentKing.Shield else CurrentKing.Health + CurrentKing.Shield
 
-                            # Shield breaks and gets a critical hit on health
-                            if combatData.IsHealthCrit:
+            # Has a shield or not
+            hasShield = True if CurrentKing.Shield > 0 else False
 
-                                # Chat Message Responses: BREAK SHIELD CRITICAL HEALTH DAMAGE MESSAGE
-                                # If incorrect {key} is given print raw message and log it.
-                                try:
-                                    Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthcrit.format(
-                                        combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
-                                        dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
-                                        totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
-                                        health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
-                                        shield=CurrentKing.Shield
-                                    ))
-                                except:
-                                    Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthcrit)
-                                    Parent.Log("BKB",
-                                               "Incorrect parameter given in 'BREAK SHIELD CRITICAL HEALTH DAMAGE MESSAGE'.")
+            # Calculate damage done to shield
+            shieldDamage = 0 if not hasShield else (
+                CurrentKing.Shield if clippedAmount >= CurrentKing.Shield else clippedAmount)
 
-                            # Shield breaks and gets a normal hit on health
-                            else:
+            # It is a crit shield damage if damage amount is equal or bigger than the set % of current shield durability
+            isCritShield = True if hasShield and shieldDamage >= CurrentKing.Shield * Settings.bkb_other_critpercent / 100.0 else False
 
-                                # Chat Message Responses: BREAK SHIELD NORMAL HEALTH DAMAGE MESSAGE
-                                # If incorrect {key} is given print raw message and log it.
-                                try:
-                                    Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthnorm.format(
-                                        combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
-                                        dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
-                                        totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
-                                        health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
-                                        shield=CurrentKing.Shield
-                                    ))
-                                except:
-                                    Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthnorm)
-                                    Parent.Log("BKB",
-                                               "Incorrect parameter given in 'BREAK SHIELD NORMAL HEALTH DAMAGE MESSAGE'.")
+            # It is a shield break if the shield is destroyed
+            isShieldBreak = True if hasShield and shieldDamage == CurrentKing.Shield else False
 
-                        # Shield breaks
-                        elif combatData.IsShieldBreak:
+            # Calculate damage done to health
+            healthDamage = 0 if CurrentKing.Shield >= clippedAmount else clippedAmount - CurrentKing.Shield
 
-                            # Chat Message Responses: BREAK SHIELD NO HEALTH DAMAGE MESSAGE
-                            # If incorrect {key} is given print raw message and log it.
-                            try:
-                                Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthnone.format(
-                                    combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
-                                    dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
-                                    totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
-                                    health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
-                                    shield=CurrentKing.Shield
-                                ))
-                            except:
-                                Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthnone)
-                                Parent.Log("BKB",
-                                           "Incorrect parameter given in 'BREAK SHIELD NO HEALTH DAMAGE MESSAGE'.")
+            # It is a crit health damage if damage amount (minus shield durability) is equal or bigger than the set % of current health
+            isCritDamage = True if healthDamage >= CurrentKing.Health * Settings.bkb_other_critpercent / 100.0 else False
 
-                        # Shield takes damage
-                        else:
+            # It is a kill if the damage is equal to the health
+            isKill = True if healthDamage == CurrentKing.Health else False
 
-                            # Critical hit on shield
-                            if combatData.IsShieldCrit:
+            # Set Combat data
+            combatData = CombatData(
+                data.User,  # Combatiant username
+                displayName,  # Combatiant Display name
+                True,  # Damage (True) or Healing (False)
+                healthDamage,  # Health Damage
+                isCritDamage,  # Health Critical Hit
+                shieldDamage,  # Shield Damage
+                isCritShield,  # Shield Critical Hit
+                0,  # Healing Amount
+                False,  # Critical Heal
+                hasShield,  # Has/Had Shield
+                isShieldBreak,  # Shield Broke
+                isKill,  # Current King is Killed
+                False,  # Fully Healed up
+                clippedAmount,  # Clipped total to max health
+                currencyspent  # Non-clipped total
+            )
 
-                                # Chat Message Responses: CRITICAL SHIELD DAMAGE MESSAGE
-                                # If incorrect {key} is given print raw message and log it.
-                                try:
-                                    Parent.SendStreamMessage(Settings.bkb_chat_shieldhitcrit.format(
-                                        combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
-                                        dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
-                                        totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
-                                        health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
-                                        shield=CurrentKing.Shield
-                                    ))
-                                except:
-                                    Parent.SendStreamMessage(Settings.bkb_chat_shieldhitcrit)
-                                    Parent.Log("BKB", "Incorrect parameter given in 'CRITICAL SHIELD DAMAGE MESSAGE'.")
+            # King is killed
+            if combatData.IsKill:
 
-                            # Normal hit on shield
-                            else:
+                # Shield Mode
+                if Settings.bkb_new_mode == "Shield Mode":
+                    # Calculate new shield value
+                    newShield = combatData.TotalAmount - combatData.ClippedAmount
+                    # Create new king
+                    newKing = King(
+                        combatData.UserName,
+                        combatData.DisplayName,
+                        "",  # AVATAR NOT IMPLEMENTED YET
+                        Settings.bkb_new_hp,
+                        Settings.bkb_new_mhp,
+                        newShield,
+                        newShield
+                    )
 
-                                # Chat Message Responses: NORMAL SHIELD DAMAGE MESSAGE
-                                # If incorrect {key} is given print raw message and log it.
-                                try:
-                                    Parent.SendStreamMessage(Settings.bkb_chat_shieldhitnorm.format(
-                                        combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
-                                        dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
-                                        totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
-                                        health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
-                                        shield=CurrentKing.Shield
-                                    ))
-                                except:
-                                    Parent.SendStreamMessage(Settings.bkb_chat_shieldhitnorm)
-                                    Parent.Log("BKB", "Incorrect parameter given in 'NORMAL SHIELD DAMAGE MESSAGE'.")
+                # Overkill Mode
+                elif Settings.bkb_new_mode == "Overkill Mode":
+                    # Calculate new maximum health
+                    newMaxHealth = Settings.bkb_new_mhp + combatData.TotalAmount - combatData.ClippedAmount
+                    # Create new king
+                    newKing = King(
+                        combatData.UserName,
+                        combatData.DisplayName,
+                        "",  # AVATAR NOT IMPLEMENTED YET
+                        newMaxHealth,
+                        newMaxHealth,
+                        Settings.bkb_new_shield,
+                        Settings.bkb_new_shield
+                    )
 
-                    # King has no shield
-                    else:
+                # Strength Mode
+                elif Settings.bkb_new_mode == "Strength Mode":
+                    # Calculate new maximum health
+                    newMaxHealth = Settings.bkb_new_mhp if combatData.TotalAmount < Settings.bkb_new_mhp else combatData.TotalAmount
+                    # Create new king
+                    newKing = King(
+                        combatData.UserName,
+                        combatData.DisplayName,
+                        "",  # AVATAR NOT IMPLEMENTED YET
+                        newMaxHealth,
+                        newMaxHealth,
+                        Settings.bkb_new_shield,
+                        Settings.bkb_new_shield
+                    )
 
-                        # Critical hit on health
+                # Fixed Mode
+                else:
+                    # Create new king
+                    newKing = King(
+                        combatData.UserName,
+                        combatData.DisplayName,
+                        "",  # AVATAR NOT IMPLEMENTED YET
+                        Settings.bkb_new_hp,
+                        Settings.bkb_new_mhp,
+                        Settings.bkb_new_shield,
+                        Settings.bkb_new_shield
+                    )
+
+                # Send data over to websocket > EVENT_BKB_KILL
+                Parent.BroadcastWsEvent("EVENT_BKB_KILL", WsDataStruct(combatData, CurrentKing, newKing).ToJSON())
+
+                # Killed while shielded
+                if CurrentKing.Shield > 0:
+
+                    # Chat Message Responses: KILL WHILE SHIELDED MESSAGE
+                    # If incorrect {key} is given print raw message and log it.
+                    try:
+                        Parent.SendStreamMessage(Settings.bkb_chat_killshield.format(
+                            combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
+                            dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
+                            totalbits=combatData.TotalAmount, ckname=CurrentKing.DisplayName,
+                            ckhealth=CurrentKing.Health, ckmaxhealth=CurrentKing.MaxHealth,
+                            ckshield=CurrentKing.Shield, nkhealth=newKing.Health,
+                            nkmaxhealth=newKing.MaxHealth, nkshield=newKing.Shield
+                        ))
+                    except:
+                        Parent.SendStreamMessage(Settings.bkb_chat_killshield)
+                        Parent.Log("BKB", "Incorrect parameter given in 'KILL WHILE SHIELDED MESSAGE'.")
+
+                # Killed while defenceless
+                else:
+
+                    # Chat Message Responses: KILL WHILE UNSHIELDED MESSAGE
+                    # If incorrect {key} is given print raw message and log it.
+                    try:
+                        Parent.SendStreamMessage(Settings.bkb_chat_killnormal.format(
+                            combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
+                            dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
+                            totalbits=combatData.TotalAmount, ckname=CurrentKing.DisplayName,
+                            ckhealth=CurrentKing.Health, ckmaxhealth=CurrentKing.MaxHealth,
+                            ckshield=CurrentKing.Shield, nkhealth=newKing.Health,
+                            nkmaxhealth=newKing.MaxHealth, nkshield=newKing.Shield
+                        ))
+                    except:
+                        Parent.SendStreamMessage(Settings.bkb_chat_killnormal)
+                        Parent.Log("BKB", "Incorrect parameter given in 'KILL WHILE UNSHIELDED MESSAGE'.")
+
+                # Set new king data as current king
+                CurrentKing = newKing
+
+            # King is not killed
+            else:
+
+                # Set 'new' king values with damaged health / shield
+                newKing = King.CopyKing(CurrentKing)
+                newKing.Damage(combatData.HealthDamage, combatData.ShieldDamage)
+
+                # Send data over to websocket > EVENT_BKB_DAMAGE
+                Parent.BroadcastWsEvent("EVENT_BKB_DAMAGE", WsDataStruct(combatData, CurrentKing, newKing).ToJSON())
+
+                # King is shielded
+                if combatData.HasShield:
+
+                    # Shield breaks and takes health damage
+                    # if combatData.IsShieldBreak and combatData.HealthDamage > 0:
+                    if combatData.HealthDamage > 0:
+
+                        # Shield breaks and gets a critical hit on health
                         if combatData.IsHealthCrit:
 
-                            # Chat Message Responses: CRITICAL HEALTH DAMAGE MESSAGE
+                            # Chat Message Responses: BREAK SHIELD CRITICAL HEALTH DAMAGE MESSAGE
                             # If incorrect {key} is given print raw message and log it.
                             try:
-                                Parent.SendStreamMessage(Settings.bkb_chat_healthhitcrit.format(
+                                Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthcrit.format(
                                     combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
                                     dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
                                     totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
@@ -816,16 +758,73 @@ def Execute(data):
                                     shield=CurrentKing.Shield
                                 ))
                             except:
-                                Parent.SendStreamMessage(Settings.bkb_chat_healthhitcrit)
-                                Parent.Log("BKB", "Incorrect parameter given in 'CRITICAL HEALTH DAMAGE MESSAGE'.")
+                                Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthcrit)
+                                Parent.Log("BKB",
+                                           "Incorrect parameter given in 'BREAK SHIELD CRITICAL HEALTH DAMAGE MESSAGE'.")
+
+                        # Shield breaks and gets a normal hit on health
+                        else:
+
+                            # Chat Message Responses: BREAK SHIELD NORMAL HEALTH DAMAGE MESSAGE
+                            # If incorrect {key} is given print raw message and log it.
+                            try:
+                                Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthnorm.format(
+                                    combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
+                                    dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
+                                    totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
+                                    health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
+                                    shield=CurrentKing.Shield
+                                ))
+                            except:
+                                Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthnorm)
+                                Parent.Log("BKB",
+                                           "Incorrect parameter given in 'BREAK SHIELD NORMAL HEALTH DAMAGE MESSAGE'.")
+
+                    # Shield breaks
+                    elif combatData.IsShieldBreak:
+
+                        # Chat Message Responses: BREAK SHIELD NO HEALTH DAMAGE MESSAGE
+                        # If incorrect {key} is given print raw message and log it.
+                        try:
+                            Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthnone.format(
+                                combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
+                                dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
+                                totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
+                                health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
+                                shield=CurrentKing.Shield
+                            ))
+                        except:
+                            Parent.SendStreamMessage(Settings.bkb_chat_breakshieldhealthnone)
+                            Parent.Log("BKB",
+                                       "Incorrect parameter given in 'BREAK SHIELD NO HEALTH DAMAGE MESSAGE'.")
+
+                    # Shield takes damage
+                    else:
+
+                        # Critical hit on shield
+                        if combatData.IsShieldCrit:
+
+                            # Chat Message Responses: CRITICAL SHIELD DAMAGE MESSAGE
+                            # If incorrect {key} is given print raw message and log it.
+                            try:
+                                Parent.SendStreamMessage(Settings.bkb_chat_shieldhitcrit.format(
+                                    combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
+                                    dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
+                                    totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
+                                    health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
+                                    shield=CurrentKing.Shield
+                                ))
+                            except:
+                                Parent.SendStreamMessage(Settings.bkb_chat_shieldhitcrit)
+                                Parent.Log("BKB", "Incorrect parameter given in 'CRITICAL SHIELD DAMAGE MESSAGE'.")
 
                         # Normal hit on shield
                         else:
 
-                            # Chat Message Responses: NORMAL HEALTH DAMAGE MESSAGE
+                            # Chat Message Responses: NORMAL SHIELD DAMAGE MESSAGE
                             # If incorrect {key} is given print raw message and log it.
                             try:
-                                Parent.SendStreamMessage(Settings.bkb_chat_healthhitnorm.format(
+                                Parent.SendStreamMessage(Settings.bkb_chat_shieldhitnorm.format(
                                     combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
                                     dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
                                     totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
@@ -833,17 +832,53 @@ def Execute(data):
                                     shield=CurrentKing.Shield
                                 ))
                             except:
-                                Parent.SendStreamMessage(Settings.bkb_chat_healthhitcrit)
-                                Parent.Log("BKB", "Incorrect parameter given in 'NORMAL HEALTH DAMAGE MESSAGE'.")
+                                Parent.SendStreamMessage(Settings.bkb_chat_shieldhitnorm)
+                                Parent.Log("BKB", "Incorrect parameter given in 'NORMAL SHIELD DAMAGE MESSAGE'.")
 
-                    # Set new king data as current king
-                    CurrentKing = newKing
+                # King has no shield
+                else:
 
-            # Set current king data in settings and save
-            Settings.SetKing(CurrentKing)
-            Settings.Save(SettingsFile)
+                    # Critical hit on health
+                    if combatData.IsHealthCrit:
 
-    # End of Execute
+                        # Chat Message Responses: CRITICAL HEALTH DAMAGE MESSAGE
+                        # If incorrect {key} is given print raw message and log it.
+                        try:
+                            Parent.SendStreamMessage(Settings.bkb_chat_healthhitcrit.format(
+                                combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
+                                dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
+                                totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
+                                health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
+                                shield=CurrentKing.Shield
+                            ))
+                        except:
+                            Parent.SendStreamMessage(Settings.bkb_chat_healthhitcrit)
+                            Parent.Log("BKB", "Incorrect parameter given in 'CRITICAL HEALTH DAMAGE MESSAGE'.")
+
+                    # Normal hit on shield
+                    else:
+
+                        # Chat Message Responses: NORMAL HEALTH DAMAGE MESSAGE
+                        # If incorrect {key} is given print raw message and log it.
+                        try:
+                            Parent.SendStreamMessage(Settings.bkb_chat_healthhitnorm.format(
+                                combatiant=combatData.DisplayName, dmghealth=combatData.HealthDamage,
+                                dmgshield=combatData.ShieldDamage, dmgtotal=combatData.ClippedAmount,
+                                totalbits=combatData.TotalAmount, name=CurrentKing.DisplayName,
+                                health=CurrentKing.Health, maxhealth=CurrentKing.MaxHealth,
+                                shield=CurrentKing.Shield
+                            ))
+                        except:
+                            Parent.SendStreamMessage(Settings.bkb_chat_healthhitcrit)
+                            Parent.Log("BKB", "Incorrect parameter given in 'NORMAL HEALTH DAMAGE MESSAGE'.")
+
+                # Set new king data as current king
+                CurrentKing = newKing
+
+        # Set current king data in settings and save
+        Settings.SetKing(CurrentKing)
+        Settings.Save(SettingsFile)
+
     return
 
 
