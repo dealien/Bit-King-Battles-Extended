@@ -108,6 +108,7 @@ class DefaultSettings():
             self.bkb_chat_shieldhitcrit = "{combatiant} critically damaged the shield of {name} with an attack of {dmgshield}!"
             self.bkb_chat_healthhitnorm = "{combatiant} attacks and managed to scrape {dmghealth} health of {name}."
             self.bkb_chat_healthhitcrit = "{combatiant} dealt a critical blow of {dmghealth} health damage on {name}!"
+            self.bkb_chat_notenoughpoints = '{name}, you now have {points} points'
             self.bkb_overlay_col_health = "rgba(65,178,0,1)"
             self.bkb_overlay_col_shield = "rgba(0,192,255,0.5)"
             self.bkb_overlay_col_damage = "rgba(153,0,3,1)"
@@ -198,7 +199,7 @@ class DefaultSettings():
             self.bkb_current_mshield
         )
 
-    def CurrencyUsed(self):
+    def Currencies(self):
         if self.use_bits is True and self.use_points is True:
             return 2
         elif self.use_bits is True:
@@ -335,6 +336,36 @@ def RepresentsInt(s):
         return False
 
 
+def availabilityCheck(currencyused, currencyspent, data):
+    # Parent.Log('BKB', 'availabilityCheck({}, {}, {})'.format(str(currencyused), str(currencyspent),
+    #                                                          {str(data.User), str(data.RawData)}))
+
+    if currencyused is None:
+        return False
+
+    # Get display name of user, if unavailable use username
+    getDisplayNameSearch = GetDisplayNameRegex.search(data.RawData)
+    displayName = str(getDisplayNameSearch.group("name") if getDisplayNameSearch.group("name") else data.User)
+
+    if currencyused is 1:
+        return True
+    elif currencyused is 2:
+        Parent.Log('BKB', '{0} has {1} points'.format(displayName, str(Parent.GetPoints(data.User))))
+        if Parent.GetPoints(data.User) >= currencyspent:
+            Parent.RemovePoints(str(data.User), currencyspent)
+            Parent.SendStreamMessage(
+                Settings.bkb_chat_notenoughpoints.format(
+                    name=str(displayName),
+                    points=Parent.GetPoints(data.User)))
+            return True
+        else:
+            Parent.SendStreamMessage("Sorry {0}, you don't have enough points".format(str(displayName)))
+            return False
+    else:
+        Parent.Log('BKB', 'Neither points nor bits used; currencyused = {0}'.format(str(currencyused)))
+        return False
+
+
 # ---------------------------------------
 # Initialize Data on Load
 # ---------------------------------------
@@ -433,38 +464,34 @@ def Execute(data):
         # If actual chat message, apply regex on raw-message to extract bits info
         if data.GetParam(0).lower() == "!bkbtest" and Parent.HasPermission(data.User, "caster", ""):
             getBitsSearch = GetBitsRegex.search("@bits=" + data.GetParam(1) + ";")
-            currencyused = 'bits'
+            currencyused = 1
         elif data.GetParam(0).lower() == "!bkb" and RepresentsInt(data.GetParam(1)):
             getBitsSearch = GetBitsRegex.search("@bits=" + data.GetParam(1) + ";")
-            currencyused = 'points'
+            currencyused = 2
         elif data.GetParam(0).lower() == "!bkb" and RepresentsInt(data.GetParam(1)) is False:
             Parent.SendStreamMessage('Usage: !bkb <points>')
             return False
         else:
             getBitsSearch = GetBitsRegex.search(data.RawData)
-            currencyused = 'bits'
+            currencyused = 1
         userPoints = Parent.GetPoints(data.User)
-        currencyspent = int(getBitsSearch.group("amount"))
+        try:
+            currencyspent = int(getBitsSearch.group("amount"))
+        except AttributeError:
+            currencyspent = None
         Parent.Log("BKB", "currencyspent = {0}".format(str(currencyspent)))
-        Parent.Log("BKB", "getBitsSearch = {0}".format(str(getBitsSearch)))
-        Parent.Log("BKB", "getBitsSearch.group('amount') = " + getBitsSearch.group("amount"))
+        Parent.Log("BKB", "currencyused = {0}".format(str(currencyused)))
+        # Parent.Log("BKB", "getBitsSearch.group('amount') = {0}".format(str(getBitsSearch.group("amount"))))
 
     # Continue if there is a regex result and a bits/points amount is given
-    if currencyspent > 0:
+    if availabilityCheck(currencyused, currencyspent, data):
 
         # Globals
         global CurrentKing
 
         # Get display-name of user, if unavailable use username
         getDisplayNameSearch = GetDisplayNameRegex.search(data.RawData)
-        displayName = getDisplayNameSearch.group("name") if getDisplayNameSearch.group("name") else data.User
-
-        # if currencyused is 'points':
-        #     if Parent.GetPoints(data.User) >= currencyspent:
-        #         Parent.SetPoints(data.User, Parent.GetPoints(data.User) - currencyspent)
-        #     else:
-        #         # TODO: Add "not enough points" message to DefaultSettings()
-        #         Parent.SendStreamMessage("Sorry " + displayName + ", you don't have enough points")
+        displayName = str(getDisplayNameSearch.group("name") if getDisplayNameSearch.group("name") else data.User)
 
         # Current King uses bits -> Healing
         if data.User == CurrentKing.UserName:
